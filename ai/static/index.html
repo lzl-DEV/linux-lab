@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MNIST 手写数字识别</title>
+    <style>
+        body { margin: 0; font-family: system-ui, "Microsoft YaHei", sans-serif; background: #f4f5f7; }
+        .wrap { max-width: 900px; margin: 24px auto; display: flex; gap: 32px; align-items: flex-start;
+                background: #fff; padding: 28px 32px; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+        h2 { margin: 0 0 6px; font-size: 20px; color: #222; }
+        .sub { color: #777; font-size: 13px; margin-bottom: 16px; }
+        canvas { border: 2px solid #cfd4dc; border-radius: 10px; cursor: crosshair; background: #fff; touch-action: none; }
+        .panel { min-width: 240px; }
+        .btns { display: flex; gap: 10px; margin-top: 16px; }
+        button { flex: 1; padding: 10px 0; font-size: 15px; border: 0; border-radius: 8px; cursor: pointer; color: #fff; background: #0d6efd; }
+        button.gray { background: #8b93a1; }
+        #result { margin-top: 22px; font-size: 15px; color: #333; line-height: 1.9; }
+        #digit { font-size: 56px; font-weight: 700; color: #0d6efd; line-height: 1.1; }
+        #bar { height: 10px; background: #e6e9ef; border-radius: 6px; overflow: hidden; margin-top: 8px; }
+        #bar > i { display: block; height: 100%; width: 0; background: #22b573; transition: width .25s; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div>
+        <h2>MNIST 手写数字识别</h2>
+        <div class="sub">在左侧画布中用鼠标写一个 0~9 的数字，然后点击“识别”</div>
+        <canvas id="pad" width="280" height="280"></canvas>
+        <div class="btns">
+            <button id="predict">识别</button>
+            <button id="clear" class="gray">清空</button>
+        </div>
+    </div>
+    <div class="panel">
+        <h2>识别结果</h2>
+        <div class="sub">模型：LeNet（PyTorch，CPU）</div>
+        <div id="result">
+            <div>预测数字：<span id="digit">—</span></div>
+            <div>置信度：<span id="prob">—</span></div>
+            <div id="bar"><i></i></div>
+        </div>
+    </div>
+</div>
+<script>
+    const pad = document.getElementById('pad');
+    const ctx = pad.getContext('2d');
+    const digitEl = document.getElementById('digit');
+    const probEl = document.getElementById('prob');
+    const barEl = document.querySelector('#bar > i');
+
+    function reset() {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, pad.width, pad.height);
+        ctx.lineWidth = 22;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = '#000000';
+    }
+    reset();
+
+    let drawing = false;
+    let last = null;
+    function pos(e) {
+        const r = pad.getBoundingClientRect();
+        return { x: (e.clientX - r.left) * pad.width / r.width, y: (e.clientY - r.top) * pad.height / r.height };
+    }
+    pad.addEventListener('pointerdown', e => {
+        drawing = true; last = pos(e);
+        ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(last.x + 0.1, last.y); ctx.stroke();
+        pad.setPointerCapture(e.pointerId);
+    });
+    pad.addEventListener('pointermove', e => {
+        if (!drawing) return;
+        const p = pos(e);
+        ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+        last = p;
+    });
+    pad.addEventListener('pointerup', () => { drawing = false; });
+    pad.addEventListener('pointerleave', () => { drawing = false; });
+
+    document.getElementById('clear').addEventListener('click', () => {
+        reset();
+        digitEl.textContent = '—';
+        probEl.textContent = '—';
+        barEl.style.width = '0';
+    });
+
+    document.getElementById('predict').addEventListener('click', async () => {
+        const dataURL = pad.toDataURL('image/png');
+        const resp = await fetch('/api', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: dataURL.split(',')[1] })
+        });
+        const data = await resp.json();
+        digitEl.textContent = data.result;
+        const pct = (data.probability * 100).toFixed(2);
+        probEl.textContent = pct + ' %';
+        barEl.style.width = Math.max(2, data.probability * 100) + '%';
+    });
+</script>
+</body>
+</html>

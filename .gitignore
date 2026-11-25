@@ -1,0 +1,6 @@
+.venv/
+data/
+input/
+*.pth
+__pycache__/
+workspace/
