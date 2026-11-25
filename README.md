@@ -7,6 +7,7 @@ Linux 操作系统实验二「Linux 环境系统开发与部署」的代码仓�
 | `vscode/` | VS Code Remote-SSH 远程编译运行的 fork 示例（`gcc test.c -o test && ./test`） |
 | `docker/` | 用静态编译 + `FROM scratch` 构建最小镜像的 Dockerfile 与源文件 |
 | `ai/` | LeNet（PyTorch，CPU）训练 MNIST、单图推理、Flask 部署手写数字识别服务 |
+| `sysprog/` | TLPI 第 4、5 章：open/write/lseek/stat 与文件空洞实验 |
 | `llm/` | Ollama 的网页聊天服务（Flask 流式转发）与 200 行的 mini-agent |
 
 ## 环境
